@@ -1,0 +1,6 @@
+# Private / regenerated locally — contains install state and playtime
+games.db
+games.csv
+cache.db
+build.log
+__pycache__/

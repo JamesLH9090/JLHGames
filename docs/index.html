@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game Library</title>
+<style>
+:root {
+  --bg: #f4f3ef; --panel: #ffffff; --panel-2: #ecebe6; --text: #1d1c1a; --muted: #6b6963;
+  --border: #dcdad3; --accent: #3d5afe; --accent-text: #fff; --chip: #e7e6f5;
+  --good: #1b8a4a; --mid: #b07d00; --bad: #c0392b; --shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121316; --panel: #1b1d22; --panel-2: #24272e; --text: #e8e8ea; --muted: #9a9ca5;
+    --border: #2e313a; --accent: #7b8cff; --accent-text: #0b0c10; --chip: #2a2e45;
+    --good: #4cc77f; --mid: #e0b84a; --bad: #f0715f; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--accent); }
+
+header {
+  position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 17px; margin: 0 8px 0 0; white-space: nowrap; }
+#q { flex: 1 1 260px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+select, .btn { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+#filtersToggle { display: none; }
+
+.layout { display: grid; grid-template-columns: 290px 1fr; align-items: start; }
+aside {
+  position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto; padding: 12px 16px 40px;
+  border-right: 1px solid var(--border); background: var(--panel);
+}
+aside section { margin-bottom: 18px; }
+aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; display: flex; justify-content: space-between; }
+.check { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+.check .n, .opt .n { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input[type=number] { width: 80px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.opt { display: flex; align-items: center; gap: 4px; padding: 3px 4px 3px 8px; }
+.opt:hover { background: var(--panel-2); }
+.opt .lbl { flex: 1; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opt .x { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 4px; font-size: 13px; }
+.opt .x:hover { color: var(--bad); }
+.opt.on .lbl { font-weight: 600; color: var(--accent); }
+.filter-search { width: 100%; padding: 6px 10px; margin-bottom: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+.link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 11px; text-transform: none; letter-spacing: 0; }
+
+main { padding: 12px 16px 40px; min-width: 0; }
+#active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; min-height: 28px; }
+#count { color: var(--muted); margin-right: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: var(--chip); font-size: 12px; border: 0; cursor: pointer; }
+.chip.ex { background: color-mix(in srgb, var(--bad) 20%, transparent); text-decoration: line-through; }
+.chip b { font-weight: 400; color: var(--muted); }
+
+#grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform .12s; }
+.card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.cover { aspect-ratio: 460 / 215; background: var(--panel-2); position: relative; overflow: hidden; }
+.cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 34px; font-weight: 700; color: var(--muted); }
+.cover .badges { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,.72); color: #fff; text-transform: uppercase; letter-spacing: .03em; }
+.card .body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.card .t { font-weight: 600; line-height: 1.25; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
+.score { font-weight: 700; font-variant-numeric: tabular-nums; }
+.good { color: var(--good); } .mid { color: var(--mid); } .bad { color: var(--bad); }
+.tags { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pdb { font-size: 11px; font-weight: 700; text-transform: capitalize; }
+.pdb.platinum { color: #8fa3b3; } .pdb.gold { color: #c9a227; } .pdb.silver { color: #a0a0a0; }
+.pdb.bronze { color: #b87333; } .pdb.borked { color: var(--bad); } .pdb.native { color: var(--good); }
+#sentinel { height: 40px; }
+#empty { text-align: center; color: var(--muted); padding: 60px 0; display: none; }
+
+dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); color: var(--text); }
+dialog::backdrop { background: rgba(0,0,0,.55); }
+dialog .hero { width: 100%; aspect-ratio: 460/215; object-fit: cover; display: block; background: var(--panel-2); }
+dialog .content { padding: 16px 20px 20px; }
+dialog h2 { margin: 0 0 4px; }
+dialog .close { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.65); color: #fff; border: 0; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
+dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 14px 0; }
+dt { color: var(--muted); }
+dd { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+
+@media (max-width: 800px) {
+  #filtersToggle { display: inline-block; }
+  .layout { grid-template-columns: 1fr; }
+  aside { display: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+  body.show-filters aside { display: block; }
+  #grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+  header h1 { display: none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎮 Game Library</h1>
+  <button class="btn" id="filtersToggle">Filters</button>
+  <input id="q" type="search" placeholder="Search titles, developers, tags, descriptions…" autocomplete="off">
+  <select id="sort" aria-label="Sort by">
+    <option value="title">Title</option>
+    <option value="review">Steam review %</option>
+    <option value="popularity">Popularity</option>
+    <option value="metacritic">Metacritic</option>
+    <option value="year">Release year</option>
+    <option value="playtime">Playtime</option>
+    <option value="random">Shuffle</option>
+  </select>
+  <button class="btn" id="order" title="Toggle sort direction">↑</button>
+  <button class="btn primary" id="surprise" title="Open a random game matching the current filters">🎲 Surprise me</button>
+</header>
+
+<div class="layout">
+  <aside id="filters">
+    <section><h3>Store</h3><div id="f-store"></div></section>
+    <section><h3>Runs on Linux</h3><div id="f-protondb"></div></section>
+    <section>
+      <h3>Release year</h3>
+      <div class="row"><input type="number" id="year_min" placeholder="from"> – <input type="number" id="year_max" placeholder="to"></div>
+    </section>
+    <section>
+      <h3>Steam reviews <span id="min_review_val">any</span></h3>
+      <input type="range" id="min_review" min="0" max="95" step="5" value="0">
+      <label class="check"><input type="checkbox" id="min_reviews"> At least 500 reviews</label>
+    </section>
+    <section id="sec-library">
+      <h3>Library</h3>
+      <label class="check"><input type="checkbox" id="installed"> Installed only</label>
+      <label class="check"><input type="checkbox" id="unplayed"> Never played <span class="n" title="Playtime is only tracked for Steam games">(Steam only)</span></label>
+    </section>
+    <section><h3>Play mode</h3><div class="list" id="f-mode"></div></section>
+    <section><h3>Genre</h3><div class="list" id="f-genre"></div></section>
+    <section>
+      <h3>Tags <span>⊘ = exclude</span></h3>
+      <input class="filter-search" id="tagSearch" type="search" placeholder="Find a tag…">
+      <div class="list" id="f-tag" style="max-height:340px"></div>
+    </section>
+  </aside>
+
+  <main>
+    <div id="active"><span id="count"></span></div>
+    <div id="grid"></div>
+    <div id="empty">No games match these filters.</div>
+    <div id="sentinel"></div>
+  </main>
+</div>
+
+<dialog id="detail"></dialog>
+
+<script>
+const PAGE = 60;
+const TIERS = ["native", "platinum", "gold", "silver", "bronze", "borked", "pending"];
+const TIER_LABEL = { native: "Native Linux", pending: "Pending (few reports)" };
+const MULTI = ["genre", "tag", "xtag", "mode", "store", "protondb"];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
+// ---- state <-> URL ----
+const state = { q: "", sort: "title", order: "asc", year_min: "", year_max: "", min_review: "0",
+  min_reviews: false, installed: false, unplayed: false, genre: [], tag: [], xtag: [], mode: [], store: [], protondb: [] };
+
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  for (const k of Object.keys(state)) {
+    if (MULTI.includes(k)) state[k] = p.getAll(k);
+    else if (typeof state[k] === "boolean") state[k] = p.has(k) && p.get(k) !== "0";
+    else if (p.has(k)) state[k] = p.get(k);
+  }
+}
+
+function params() {
+  const p = new URLSearchParams();
+  if (state.q) p.set("q", state.q);
+  for (const k of MULTI) for (const v of state[k]) p.append(k, v);
+  for (const k of ["year_min", "year_max"]) if (state[k]) p.set(k, state[k]);
+  if (+state.min_review) p.set("min_review", state.min_review);
+  if (state.min_reviews) p.set("min_reviews", "500");
+  if (state.installed) p.set("installed", "1");
+  if (state.unplayed) p.set("unplayed", "1");
+  return p;
+}
+
+function syncUrl() {
+  const p = params();
+  if (state.sort !== "title") p.set("sort", state.sort);
+  if (state.order !== "asc") p.set("order", state.order);
+  history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
+}
+
+// ---- data ----
+let offset = 0, total = 0, loadingFor = 0, reqId = 0;
+
+// Two modes: on GitHub Pages the page loads games.json and filters in the browser;
+// run locally via server.py (where games.json 404s) it uses the /api backend instead.
+let LOCAL = null;  // { games, generated } in static mode
+
+async function initData() {
+  try {
+    const r = await fetch("games.json");
+    if (r.ok) {
+      const data = await r.json();
+      const split = (s) => (s ? s.split(", ") : []);
+      for (const g of data.games) {
+        g._genre = split(g.genres); g._tag = split(g.tags); g._mode = split(g.modes); g._store = split(g.stores);
+        g._text = [g.title, g.developers, g.tags, g.description].join("\n").toLowerCase();
+      }
+      LOCAL = data;
+    }
+  } catch { /* not static: fall back to the API */ }
+  if (LOCAL) {
+    // Install state and playtime are not published.
+    $("#sec-library").remove();
+    $('#sort option[value="playtime"]').remove();
+    $("header h1").title = `Updated ${LOCAL.generated}`;
+  }
+}
+
+async function api(path, p) {
+  if (LOCAL) return localApi(path, p);
+  const r = await fetch(`${path}?${p}`);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// Mirrors server.py's build_where().
+function localFilter(p) {
+  const q = (p.get("q") || "").trim().toLowerCase();
+  const all = (k) => p.getAll(k);
+  const num = (k) => (/^\d+$/.test(p.get(k) || "") ? +p.get(k) : null);
+  const [genre, tag, mode, xtag, store, tiers] = ["genre", "tag", "mode", "xtag", "store", "protondb"].map(all);
+  const [ymin, ymax, minRev, minRevs] = ["year_min", "year_max", "min_review", "min_reviews"].map(num);
+  const tierSet = new Set(tiers.filter((t) => t !== "native"));
+  return LOCAL.games.filter((g) =>
+    (!q || g._text.includes(q))
+    && genre.every((v) => g._genre.includes(v))
+    && tag.every((v) => g._tag.includes(v))
+    && mode.every((v) => g._mode.includes(v))
+    && !xtag.some((v) => g._tag.includes(v) || g._genre.includes(v) || g._mode.includes(v))
+    && (!store.length || store.some((v) => g._store.includes(v)))
+    && (!tiers.length || (tiers.includes("native") && g.linux_native) || tierSet.has(g.protondb))
+    && (ymin == null || (g.year != null && g.year >= ymin))
+    && (ymax == null || (g.year != null && g.year <= ymax))
+    && (minRev == null || (g.steam_review_pct != null && g.steam_review_pct >= minRev))
+    && (minRevs == null || (g.steam_reviews != null && g.steam_reviews >= minRevs)));
+}
+
+const SORT_KEYS = { title: "title", year: "year", review: "steam_review_pct", metacritic: "metacritic", popularity: "steam_reviews" };
+const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+
+function localApi(path, p) {
+  if (path.startsWith("/api/game/")) return LOCAL.games.find((g) => g.id === +path.split("/").pop());
+  const rows = localFilter(p);
+  if (path === "/api/games") {
+    const sort = p.get("sort"), dir = p.get("order") === "desc" ? -1 : 1;
+    if (sort === "random") {
+      for (let i = rows.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [rows[i], rows[j]] = [rows[j], rows[i]]; }
+    } else {
+      const key = SORT_KEYS[sort] || "title";
+      rows.sort(key === "title" ? (a, b) => dir * byTitle(a, b) : (a, b) =>
+        (a[key] == null) - (b[key] == null) || dir * ((a[key] ?? 0) - (b[key] ?? 0)) || byTitle(a, b));
+    }
+    const off = +p.get("offset") || 0, lim = +p.get("limit") || 60;
+    return { total: rows.length, games: rows.slice(off, off + lim) };
+  }
+  // /api/facets
+  const count = (key) => {
+    const m = new Map();
+    for (const g of rows) for (const v of new Set(g[key])) m.set(v, (m.get(v) || 0) + 1);
+    return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  };
+  const tiers = new Map();
+  for (const g of rows) tiers.set(g.protondb || "unknown", (tiers.get(g.protondb || "unknown") || 0) + 1);
+  return {
+    genre: count("_genre"), tag: count("_tag"), mode: count("_mode"), store: count("_store"),
+    protondb: [...tiers, ["native", rows.filter((g) => g.linux_native).length]],
+  };
+}
+
+async function refresh() {
+  syncUrl();
+  renderControls();
+  offset = 0; total = 0;
+  $("#grid").innerHTML = "";
+  const id = ++reqId;
+  const [facets] = await Promise.all([api("/api/facets", params()), loadMore(id)]);
+  if (id === reqId) renderFacets(facets);
+}
+
+async function loadMore(id = reqId) {
+  if (loadingFor === id || (offset && offset >= total)) return;
+  loadingFor = id;
+  const p = params();
+  p.set("sort", state.sort); p.set("order", state.order);
+  p.set("limit", PAGE); p.set("offset", offset);
+  try {
+    const data = await api("/api/games", p);
+    if (id !== reqId) return;
+    total = data.total;
+    offset += data.games.length;
+    $("#grid").insertAdjacentHTML("beforeend", data.games.map(card).join(""));
+    $("#count").textContent = `${total.toLocaleString()} game${total === 1 ? "" : "s"}`;
+    $("#empty").style.display = total ? "none" : "block";
+  } finally {
+    if (loadingFor === id) loadingFor = 0;
+  }
+  // Keep filling if the sentinel is still on screen (tall windows).
+  if (id === reqId && offset < total && $("#sentinel").getBoundingClientRect().top < innerHeight + 400) loadMore(id);
+}
+
+// ---- rendering ----
+function scoreClass(pct) { return pct >= 85 ? "good" : pct >= 65 ? "mid" : "bad"; }
+
+function pdbBadge(g) {
+  if (g.linux_native) return `<span class="pdb native">Native</span>`;
+  return g.protondb ? `<span class="pdb ${esc(g.protondb)}">${esc(g.protondb)}</span>` : "";
+}
+
+function cover(g) {
+  const ph = `<div class="ph">${esc(g.title.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase())}</div>`;
+  const img = g.image ? `<img loading="lazy" src="${esc(g.image)}" alt="" onerror="this.remove()">` : "";
+  return ph + img;
+}
+
+function card(g) {
+  const badges = g.stores.split(", ").map((s) => `<span class="badge">${esc(s)}</span>`).join("")
+    + (g.installed ? `<span class="badge" style="background:var(--good)">Installed</span>` : "");
+  const score = g.steam_review_pct != null
+    ? `<span class="score ${scoreClass(g.steam_review_pct)}" title="${g.steam_reviews?.toLocaleString()} Steam reviews">${g.steam_review_pct}%</span>` : "";
+  return `<div class="card" data-id="${g.id}" tabindex="0">
+    <div class="cover">${cover(g)}<div class="badges">${badges}</div></div>
+    <div class="body">
+      <div class="t">${esc(g.title)}</div>
+      <div class="meta">${g.year ?? ""} ${score} ${g.metacritic ? `<span title="Metacritic">MC ${g.metacritic}</span>` : ""} ${pdbBadge(g)}
+        ${g.playtime_hours ? `<span>${g.playtime_hours}h played</span>` : ""}</div>
+      <div class="tags">${esc((g.tags || g.genres || "").split(", ").slice(0, 5).join(" · "))}</div>
+    </div></div>`;
+}
+
+let tagFilter = "";
+let lastFacets = null;
+
+function renderFacets(f) {
+  lastFacets = f;
+  const checks = (kind, items, labelFn = (x) => x) => items.map(([v, n]) => `
+    <label class="check"><input type="checkbox" data-kind="${kind}" value="${esc(v)}" ${state[kind].includes(v) ? "checked" : ""}>
+    ${esc(labelFn(v))}<span class="n">${n}</span></label>`).join("");
+
+  const stores = ["Steam", "Epic", "GOG"].map((s) => [s, (f.store.find((x) => x[0] === s) || [s, 0])[1]]);
+  $("#f-store").innerHTML = checks("store", stores);
+  const tierCounts = Object.fromEntries(f.protondb);
+  $("#f-protondb").innerHTML = checks("protondb", TIERS.map((t) => [t, tierCounts[t] || 0]),
+    (t) => TIER_LABEL[t] || `ProtonDB ${t[0].toUpperCase() + t.slice(1)}`);
+
+  renderList("mode", f.mode);
+  renderList("genre", f.genre);
+  renderTags();
+}
+
+function optList(kind, items, exclude = false) {
+  return items.map(([v, n]) => {
+    const on = state[kind].includes(v), ex = exclude && state.xtag.includes(v);
+    return `<div class="opt ${on ? "on" : ""}">
+      <span class="lbl" data-kind="${kind}" data-v="${esc(v)}" title="${esc(v)}">${on ? "✓ " : ex ? "⊘ " : ""}${esc(v)}</span>
+      <span class="n">${n}</span>
+      ${exclude ? `<button class="x" data-v="${esc(v)}" title="Exclude ${esc(v)}">⊘</button>` : ""}</div>`;
+  }).join("");
+}
+
+function withSelected(kind, items) {
+  // Keep selected labels visible even when the current result set has 0 of them.
+  const have = new Set(items.map((x) => x[0]));
+  return [...state[kind].filter((v) => !have.has(v)).map((v) => [v, 0]), ...items];
+}
+
+function renderList(kind, items) {
+  $(`#f-${kind}`).innerHTML = optList(kind, withSelected(kind, items));
+}
+
+function renderTags() {
+  if (!lastFacets) return;
+  let items = withSelected("tag", lastFacets.tag);
+  const t = tagFilter.toLowerCase();
+  if (t) items = items.filter(([v]) => v.toLowerCase().includes(t));
+  else items = items.filter(([v]) => !state.tag.includes(v)).slice(0, 80);
+  if (!t) items = [...state.tag.map((v) => [v, (lastFacets.tag.find((x) => x[0] === v) || [v, 0])[1]]), ...items];
+  $("#f-tag").innerHTML = optList("tag", items, true) || `<div class="opt"><span class="lbl n">No tags</span></div>`;
+}
+
+function renderControls() {
+  $("#q").value = state.q;
+  $("#sort").value = state.sort;
+  $("#order").textContent = state.order === "asc" ? "↑" : "↓";
+  $("#order").disabled = state.sort === "random";
+  $("#year_min").value = state.year_min;
+  $("#year_max").value = state.year_max;
+  $("#min_review").value = state.min_review;
+  $("#min_review_val").textContent = +state.min_review ? `≥ ${state.min_review}%` : "any";
+  if (LOCAL) state.installed = state.unplayed = false;
+  for (const k of ["min_reviews", "installed", "unplayed"]) if ($("#" + k)) $("#" + k).checked = state[k];
+
+  const chips = [];
+  if (state.q) chips.push(["q", state.q, `“${state.q}”`]);
+  for (const k of ["store", "protondb", "mode", "genre", "tag"]) for (const v of state[k]) chips.push([k, v, v]);
+  for (const v of state.xtag) chips.push(["xtag", v, v, true]);
+  if (state.year_min || state.year_max) chips.push(["years", "", `${state.year_min || "…"}–${state.year_max || "…"}`]);
+  if (+state.min_review) chips.push(["min_review", "", `≥ ${state.min_review}% positive`]);
+  if (state.min_reviews) chips.push(["min_reviews", "", "500+ reviews"]);
+  if (state.installed) chips.push(["installed", "", "Installed"]);
+  if (state.unplayed) chips.push(["unplayed", "", "Unplayed"]);
+  const html = chips.map(([k, v, label, ex]) =>
+    `<button class="chip ${ex ? "ex" : ""}" data-k="${k}" data-v="${esc(v)}" title="Remove filter">${esc(label)} <b>✕</b></button>`).join("");
+  $("#active").innerHTML = `<span id="count">${$("#count")?.textContent || ""}</span>${html}`
+    + (chips.length ? `<button class="link" id="clearAll">Clear all</button>` : "");
+}
+
+// ---- detail dialog ----
+async function openDetail(id) {
+  const g = await api(`/api/game/${id}`, "");
+  const list = (s) => (s || "").split(", ").filter(Boolean);
+  const chips = (kind, vals) => `<div class="chips">${vals.map((v) =>
+    `<button class="chip" data-add="${kind}" data-v="${esc(v)}" title="Filter by ${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
+  const links = [];
+  if (g.steam_appid) {
+    links.push(`<a target="_blank" rel="noopener" href="https://store.steampowered.com/app/${g.steam_appid}">Steam page</a>`);
+    links.push(`<a target="_blank" rel="noopener" href="https://www.protondb.com/app/${g.steam_appid}">ProtonDB</a>`);
+    if (g.stores.includes("Steam")) links.push(`<a href="steam://run/${g.steam_appid}">▶ Launch in Steam</a>`);
+  }
+  links.push(`<a target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(g.title + " gameplay")}">Gameplay videos</a>`);
+  const row = (label, val) => val ? `<dt>${label}</dt><dd>${val}</dd>` : "";
+  $("#detail").innerHTML = `
+    <button class="close" aria-label="Close">✕</button>
+    ${g.image ? `<img class="hero" src="${esc(g.image)}" alt="">` : ""}
+    <div class="content">
+      <h2>${esc(g.title)}</h2>
+      <div class="meta">${esc(g.developers || "")}${g.release_date ? " · " + esc(g.release_date) : ""}</div>
+      ${g.description ? `<p>${esc(g.description)}</p>` : ""}
+      <dl>
+        ${row("Owned on", esc(g.stores))}
+        ${row("Steam reviews", g.steam_review_pct != null ? `<span class="score ${scoreClass(g.steam_review_pct)}">${g.steam_review_pct}%</span> of ${g.steam_reviews.toLocaleString()}` : "")}
+        ${row("Metacritic", g.metacritic)}
+        ${row("Linux", [g.linux_native ? "Native" : "", g.protondb ? `ProtonDB ${esc(g.protondb)}` : ""].filter(Boolean).join(" · "))}
+        ${row("Installed", g.installed ? "Yes" : "")}
+        ${row("Playtime", g.playtime_hours ? `${g.playtime_hours} hours` : "")}
+        ${row("Genres", list(g.genres).length ? chips("genre", list(g.genres)) : "")}
+        ${row("Modes", list(g.modes).length ? chips("mode", list(g.modes)) : "")}
+        ${row("Tags", list(g.tags).length ? chips("tag", list(g.tags)) : "")}
+      </dl>
+      ${!g.metadata ? `<p class="meta">No store metadata was found for this title.</p>` : ""}
+      <div class="links">${links.join("")}</div>
+    </div>`;
+  $("#detail").showModal();
+  $("#detail").scrollTop = 0;
+}
+
+// ---- events ----
+function toggle(kind, v) {
+  const arr = state[kind];
+  const i = arr.indexOf(v);
+  i >= 0 ? arr.splice(i, 1) : arr.push(v);
+  if (kind === "tag") state.xtag = state.xtag.filter((x) => x !== v);
+  if (kind === "xtag") state.tag = state.tag.filter((x) => x !== v);
+  refresh();
+}
+
+let debounce;
+$("#q").addEventListener("input", (e) => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => { state.q = e.target.value.trim(); refresh(); }, 250);
+});
+$("#sort").addEventListener("change", (e) => {
+  state.sort = e.target.value;
+  // Sensible default directions: best/newest/most first.
+  state.order = ["review", "popularity", "metacritic", "year", "playtime"].includes(state.sort) ? "desc" : "asc";
+  refresh();
+});
+$("#order").addEventListener("click", () => { state.order = state.order === "asc" ? "desc" : "asc"; refresh(); });
+for (const k of ["year_min", "year_max"]) $("#" + k).addEventListener("change", (e) => { state[k] = e.target.value; refresh(); });
+$("#min_review").addEventListener("input", (e) => { $("#min_review_val").textContent = +e.target.value ? `≥ ${e.target.value}%` : "any"; });
+$("#min_review").addEventListener("change", (e) => { state.min_review = e.target.value; refresh(); });
+for (const k of ["min_reviews", "installed", "unplayed"]) $("#" + k).addEventListener("change", (e) => { state[k] = e.target.checked; refresh(); });
+$("#tagSearch").addEventListener("input", (e) => { tagFilter = e.target.value; renderTags(); });
+$("#filtersToggle").addEventListener("click", () => document.body.classList.toggle("show-filters"));
+
+$("#filters").addEventListener("change", (e) => {
+  if (e.target.dataset.kind) toggle(e.target.dataset.kind, e.target.value);
+});
+$("#filters").addEventListener("click", (e) => {
+  const lbl = e.target.closest(".lbl[data-kind]");
+  if (lbl) return toggle(lbl.dataset.kind, lbl.dataset.v);
+  const x = e.target.closest(".x");
+  if (x) toggle("xtag", x.dataset.v);
+});
+
+$("#active").addEventListener("click", (e) => {
+  if (e.target.id === "clearAll") {
+    Object.assign(state, { q: "", year_min: "", year_max: "", min_review: "0", min_reviews: false, installed: false, unplayed: false });
+    for (const k of MULTI) state[k] = [];
+    return refresh();
+  }
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  const { k, v } = chip.dataset;
+  if (MULTI.includes(k)) state[k] = state[k].filter((x) => x !== v);
+  else if (k === "years") { state.year_min = ""; state.year_max = ""; }
+  else if (k === "q") state.q = "";
+  else if (k === "min_review") state.min_review = "0";
+  else state[k] = false;
+  refresh();
+});
+
+$("#grid").addEventListener("click", (e) => {
+  const c = e.target.closest(".card");
+  if (c) openDetail(c.dataset.id);
+});
+$("#grid").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.classList.contains("card")) openDetail(e.target.dataset.id);
+});
+
+$("#detail").addEventListener("click", (e) => {
+  const d = $("#detail");
+  if (e.target === d || e.target.closest(".close")) return d.close();
+  const add = e.target.closest("[data-add]");
+  if (add) {
+    d.close();
+    const { add: kind, v } = add.dataset;
+    if (!state[kind].includes(v)) toggle(kind, v);
+  }
+});
+
+$("#surprise").addEventListener("click", async () => {
+  const p = params();
+  p.set("sort", "random"); p.set("limit", "1");
+  const data = await api("/api/games", p);
+  if (data.games.length) openDetail(data.games[0].id);
+});
+
+new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting && offset < total) loadMore();
+}, { rootMargin: "600px" }).observe($("#sentinel"));
+
+readUrl();
+initData().then(refresh);
+</script>
+</body>
+</html>
