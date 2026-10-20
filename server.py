@@ -6,14 +6,16 @@ Usage: python3 server.py [--port 8765] [--db games.db]   then open http://localh
 API (all GET, JSON):
   /api/games   ?q= &genre= &tag= &mode= (repeatable, all must match) &xtag= (repeatable, exclude)
                &store= &protondb= (repeatable, any may match) &year_min= &year_max=
-               &min_review= &min_reviews= &installed=1 &unplayed=1
+               &min_review= &min_reviews= &installed=1 &unplayed=1 &visibility=hidden|public
                &sort=title|year|review|metacritic|popularity|playtime|random &order=asc|desc
                &limit= &offset=
   /api/facets  same filters -> label counts among matching games
   /api/game/<id>
+POST /api/visibility  {"title": ..., "hidden": true|false}  -> updates visibility.json + docs/games.json
 """
 import argparse
 import json
+import publish
 import sqlite3
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -21,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 
 HERE = Path(__file__).resolve().parent
 INDEX = HERE / "docs" / "index.html"
+STATIC_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml", ".ico": "image/x-icon"}
 
 SORTS = {
     "title": "title COLLATE NOCASE",
@@ -32,7 +35,7 @@ SORTS = {
     "random": "random()",
 }
 LABEL_FILTERS = {"genre": "genre", "tag": "tag", "mode": "mode"}  # query param -> game_labels.kind
-CARD_COLUMNS = "id, title, year, stores, genres, tags, steam_review_pct, steam_reviews, metacritic, protondb, linux_native, installed, playtime_hours, image"
+CARD_COLUMNS = "id, title, year, stores, genres, tags, steam_review_pct, steam_reviews, metacritic, protondb, linux_native, installed, playtime_hours, image, public, hidden_reason"
 
 
 def build_where(params):
@@ -75,6 +78,9 @@ def build_where(params):
         where.append("installed = 1")
     if one("unplayed") == "1":
         where.append("(playtime_hours IS NULL OR playtime_hours = 0)")
+    if one("visibility") in ("hidden", "public"):
+        where.append("public = ?")
+        args.append(int(one("visibility") == "public"))
     return (" WHERE " + " AND ".join(where)) if where else "", args
 
 
@@ -110,6 +116,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, self.facets(params))
             if url.path.startswith("/api/game/") and url.path.rsplit("/", 1)[1].isdigit():
                 return self.game(int(url.path.rsplit("/", 1)[1]))
+            # Other files in docs/ (crest.png). games.json must 404 here: that's how the page knows to use the API.
+            static = (INDEX.parent / url.path.lstrip("/")).resolve()
+            if static.parent == INDEX.parent and static.is_file() and static.suffix in STATIC_TYPES:
+                return self.send(200, static.read_bytes(), STATIC_TYPES[static.suffix])
             self.send(404, {"error": "not found"})
         except sqlite3.Error as e:
             self.send(500, {"error": str(e)})
@@ -141,6 +151,7 @@ class Handler(BaseHTTPRequestHandler):
             tiers = conn.execute(
                 f"SELECT COALESCE(protondb, 'unknown') t, COUNT(*) n FROM games{where} GROUP BY t ORDER BY n DESC", args
             ).fetchall()
+            hidden = conn.execute(f"SELECT COUNT(*) FROM games{where}{' AND' if where else ' WHERE'} public = 0", args).fetchone()[0]
             native = conn.execute(f"SELECT COUNT(*) FROM games{where}{' AND' if where else ' WHERE'} linux_native = 1", args).fetchone()[0]
             years = conn.execute("SELECT MIN(year), MAX(year) FROM games").fetchone()
         out = {"genre": [], "tag": [], "mode": [], "store": []}
@@ -148,7 +159,22 @@ class Handler(BaseHTTPRequestHandler):
             out[r["kind"]].append([r["label"], r["n"]])
         out["protondb"] = [[r["t"], r["n"]] for r in tiers] + [["native", native]]
         out["years"] = list(years)
+        out["hidden"] = hidden
         return out
+
+    def do_POST(self):
+        if urlparse(self.path).path != "/api/visibility":
+            return self.send(404, {"error": "not found"})
+        # Requiring JSON forces a CORS preflight, so other websites can't POST here from your browser.
+        if self.headers.get("Content-Type", "").split(";")[0].strip() != "application/json":
+            return self.send(415, {"error": "Content-Type must be application/json"})
+        try:
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            title, hide = body["title"], bool(body["hidden"])
+        except (ValueError, KeyError, TypeError):
+            return self.send(400, {"error": "expected {title, hidden}"})
+        shown, hidden = publish.set_hidden(title, hide)
+        self.send(200, {"public": shown, "hidden": hidden})
 
     def game(self, gid):
         with self.db() as conn:
@@ -167,6 +193,7 @@ def main():
     if not args.db.exists():
         raise SystemExit(f"{args.db} not found — run build_game_library.py first")
     Handler.db_path = args.db.resolve()
+    publish.apply_visibility(Handler.db_path)  # make sure public/hidden_reason columns are current
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"Game library at http://localhost:{args.port}  (Ctrl+C to stop)")
     try:

@@ -4,3 +4,5 @@ games.csv
 cache.db
 build.log
 __pycache__/
+# Which games are hidden from the public site — kept private
+visibility.json

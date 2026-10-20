@@ -139,6 +139,10 @@ main { padding: 18px max(16px, env(safe-area-inset-right)) 48px 20px; min-width:
 .cover .badges { position: absolute; top: 7px; right: 7px; display: flex; gap: 4px; }
 .badge { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(12,13,13,.82); color: var(--fg); text-transform: uppercase; letter-spacing: .08em; border: 1px solid rgba(255,255,255,.08); }
 .badge.inst { background: var(--good); color: var(--ink); }
+.badge.hid { background: var(--bad); color: var(--ink); }
+.card.is-hidden .cover img { filter: grayscale(.8) brightness(.6); }
+.visibility { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 16px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line); }
+.visibility b.off { color: var(--bad); } .visibility b.on { color: var(--good); }
 .card .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .card .t { font-weight: 700; line-height: 1.25; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -238,6 +242,7 @@ dd { margin: 0; }
       <h3>Library</h3>
       <label class="check"><input type="checkbox" id="installed"> Installed only</label>
       <label class="check"><input type="checkbox" id="unplayed"> Never played <span class="n" title="Playtime is only tracked for Steam games">(Steam only)</span></label>
+      <label class="check"><input type="checkbox" id="hidden_only"> Hidden from public site <span class="n" id="hiddenCount"></span></label>
     </section>
     <section><h3>Play mode</h3><div class="list" id="f-mode"></div></section>
     <section><h3>Genre</h3><div class="list" id="f-genre"></div></section>
@@ -290,7 +295,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 // Viewers land on the best-known games first.
 const DEFAULT_SORT = "popularity";
 const state = { q: "", sort: DEFAULT_SORT, order: "desc", year_min: "", year_max: "", min_review: "0",
-  min_reviews: false, installed: false, unplayed: false, genre: [], tag: [], xtag: [], mode: [], store: [], protondb: [] };
+  min_reviews: false, installed: false, unplayed: false, hidden_only: false, genre: [], tag: [], xtag: [], mode: [], store: [], protondb: [] };
 
 function readUrl() {
   const p = new URLSearchParams(location.search);
@@ -310,6 +315,7 @@ function params() {
   if (state.min_reviews) p.set("min_reviews", "500");
   if (state.installed) p.set("installed", "1");
   if (state.unplayed) p.set("unplayed", "1");
+  if (state.hidden_only) p.set("visibility", "hidden");
   return p;
 }
 
@@ -456,10 +462,11 @@ function cover(g) {
 
 function card(g) {
   const badges = g.stores.split(", ").map((s) => `<span class="badge">${esc(s)}</span>`).join("")
-    + (g.installed ? `<span class="badge inst">Installed</span>` : "");
+    + (g.installed ? `<span class="badge inst">Installed</span>` : "")
+    + (g.public === 0 ? `<span class="badge hid">Hidden</span>` : "");
   const score = g.steam_review_pct != null
     ? `<span class="score ${scoreClass(g.steam_review_pct)}" title="${g.steam_reviews?.toLocaleString()} Steam reviews">${g.steam_review_pct}%</span>` : "";
-  return `<div class="card" data-id="${g.id}" tabindex="0">
+  return `<div class="card${g.public === 0 ? " is-hidden" : ""}" data-id="${g.id}" tabindex="0">
     <div class="cover">${cover(g)}<div class="badges">${badges}</div></div>
     <div class="body">
       <div class="t">${esc(g.title)}</div>
@@ -484,6 +491,7 @@ function renderFacets(f) {
   $("#f-protondb").innerHTML = checks("protondb", TIERS.map((t) => [t, tierCounts[t] || 0]),
     (t) => TIER_LABEL[t] || `ProtonDB ${t[0].toUpperCase() + t.slice(1)}`);
 
+  if (f.hidden != null) $("#hiddenCount").textContent = f.hidden;
   renderList("mode", f.mode);
   renderList("genre", f.genre);
   renderTags();
@@ -528,8 +536,8 @@ function renderControls() {
   $("#year_max").value = state.year_max;
   $("#min_review").value = state.min_review;
   $("#min_review_val").textContent = +state.min_review ? `≥ ${state.min_review}%` : "any";
-  if (LOCAL) state.installed = state.unplayed = false;
-  for (const k of ["min_reviews", "installed", "unplayed"]) if ($("#" + k)) $("#" + k).checked = state[k];
+  if (LOCAL) state.installed = state.unplayed = state.hidden_only = false;
+  for (const k of ["min_reviews", "installed", "unplayed", "hidden_only"]) if ($("#" + k)) $("#" + k).checked = state[k];
 
   const chips = [];
   if (state.q) chips.push(["q", state.q, `“${state.q}”`]);
@@ -540,6 +548,7 @@ function renderControls() {
   if (state.min_reviews) chips.push(["min_reviews", "", "500+ reviews"]);
   if (state.installed) chips.push(["installed", "", "Installed"]);
   if (state.unplayed) chips.push(["unplayed", "", "Unplayed"]);
+  if (state.hidden_only) chips.push(["hidden_only", "", "Hidden from public"]);
   const html = chips.map(([k, v, label, ex]) =>
     `<button class="chip ${ex ? "ex" : ""}" data-k="${k}" data-v="${esc(v)}" title="Remove filter">${esc(label)} <b>✕</b></button>`).join("");
   $("#active").innerHTML = `<span id="count">${$("#count")?.textContent || ""}</span>${html}`
@@ -590,6 +599,11 @@ async function openDetail(id) {
         </div>
       </div>
       <div class="links">${links.join("")}</div>
+      ${!LOCAL && g.public != null ? `<div class="visibility">
+        <span>Public site: ${g.public ? `<b class="on">Shown</b>` : `<b class="off">Hidden</b> <span class="meta">(${esc(g.hidden_reason)})</span>`}</span>
+        <button class="btn" id="toggleVisibility" data-id="${g.id}" data-title="${esc(g.title)}" data-hide="${g.public ? 1 : 0}">
+          ${g.public ? "Hide from public site" : "Show on public site"}</button>
+      </div>` : ""}
     </div>`;
   const d = $("#detail");
   if (!d.open) d.showModal();
@@ -603,6 +617,21 @@ const ICON_TWITCH = document.querySelector("#twitchLink svg").outerHTML;
 const ICON_YOUTUBE = document.querySelector("#youtubeLink svg").outerHTML;
 $("#twitchLink").href = TWITCH;
 $("#youtubeLink").href = YOUTUBE;
+
+async function toggleVisibility(btn) {
+  const hide = btn.dataset.hide === "1";
+  btn.disabled = true;
+  const r = await fetch("/api/visibility", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: btn.dataset.title, hidden: hide }),
+  });
+  if (!r.ok) { btn.disabled = false; return toast("Couldn't save — is server.py running?"); }
+  toast(hide ? "Hidden from public site — run publish.py --push to update it" : "Shown on public site — run publish.py --push to update it");
+  await openDetail(btn.dataset.id);
+  const top = scrollY;
+  await refresh();
+  scrollTo(0, top);
+}
 
 let toastTimer;
 function toast(msg) {
@@ -658,7 +687,7 @@ $("#order").addEventListener("click", () => { state.order = state.order === "asc
 for (const k of ["year_min", "year_max"]) $("#" + k).addEventListener("change", (e) => { state[k] = e.target.value; refresh(); });
 $("#min_review").addEventListener("input", (e) => { $("#min_review_val").textContent = +e.target.value ? `≥ ${e.target.value}%` : "any"; });
 $("#min_review").addEventListener("change", (e) => { state.min_review = e.target.value; refresh(); });
-for (const k of ["min_reviews", "installed", "unplayed"]) $("#" + k).addEventListener("change", (e) => { state[k] = e.target.checked; refresh(); });
+for (const k of ["min_reviews", "installed", "unplayed", "hidden_only"]) $("#" + k).addEventListener("change", (e) => { state[k] = e.target.checked; refresh(); });
 $("#tagSearch").addEventListener("input", (e) => { tagFilter = e.target.value; renderTags(); });
 $("#filtersToggle").addEventListener("click", () => document.body.classList.toggle("show-filters"));
 
@@ -674,7 +703,7 @@ $("#filters").addEventListener("click", (e) => {
 
 $("#active").addEventListener("click", (e) => {
   if (e.target.id === "clearAll") {
-    Object.assign(state, { q: "", year_min: "", year_max: "", min_review: "0", min_reviews: false, installed: false, unplayed: false });
+    Object.assign(state, { q: "", year_min: "", year_max: "", min_review: "0", min_reviews: false, installed: false, unplayed: false, hidden_only: false });
     for (const k of MULTI) state[k] = [];
     return refresh();
   }
@@ -701,6 +730,8 @@ $("#detail").addEventListener("click", (e) => {
   const d = $("#detail");
   if (e.target === d || e.target.closest(".close")) return d.close();
   if (e.target.closest("#copySuggest")) return copySuggestion();
+  const vis = e.target.closest("#toggleVisibility");
+  if (vis) return toggleVisibility(vis);
   const add = e.target.closest("[data-add]");
   if (add) {
     d.close();

@@ -14,12 +14,25 @@ for stream viewers: each game has a **Suggest** box that copies a chat message l
 message wording are constants at the top of the `<script>` in `docs/index.html`
 (`TWITCH`, `YOUTUBE`, `suggestionMessage`) — change the message there if you add a bot command like `!suggest`.
 
+## Hiding games from the public site
+
+`visibility.json` (local only, git-ignored so the list itself isn't public) decides what viewers see:
+
+- `hide_tags` — games with any of these Steam tags/genres are hidden (default: Hentai, NSFW)
+- `show` — exceptions to the tag rule, for wrongly tagged games (e.g. LEGO Star Wars is tagged NSFW)
+- `hide` — always hidden, for games the tags miss
+
+Easiest way to edit it: run `python3 server.py`, open a game, click **Hide from public site** /
+**Show on public site**. Tick *Hidden from public site* in the sidebar to review everything hidden.
+Then publish with `python3 publish.py --push`.
+
 ## Refresh
 
 1. In Lutris, re-sync your Steam / Epic / GOG sources (picks up new purchases).
 2. `python3 build_game_library.py` — cached lookups make re-runs fast; only new games hit the network.
    This rewrites `games.db`, `games.csv` and `docs/games.json`.
-3. Publish: `git add docs && git commit -m "Update library" && git push` — GitHub Pages redeploys in a minute or two.
+   It also re-applies `visibility.json` to `docs/games.json`.
+3. Publish: `python3 publish.py --push` — GitHub Pages redeploys in a minute or two.
 
 ## What gets published
 

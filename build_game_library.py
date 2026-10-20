@@ -314,8 +314,6 @@ COLUMNS = ["title", "stores", "year", "release_date", "genres", "tags", "modes",
            "steam_review_pct", "steam_reviews", "protondb", "linux_native", "developers",
            "installed", "playtime_hours", "description", "steam_appid", "gog_id", "epic_id", "image", "metadata"]
 LIST_COLUMNS = ("genres", "tags", "modes", "metadata")
-# docs/games.json is published to GitHub Pages: no install state, playtime or store account IDs.
-PUBLIC_COLUMNS = [c for c in COLUMNS if c not in ("installed", "playtime_hours", "gog_id", "epic_id")]
 
 
 def write_outputs(rows, out_dir):
@@ -336,12 +334,7 @@ def write_outputs(rows, out_dir):
         w.writerow(COLUMNS)
         for r in rows:
             w.writerow(["; ".join(r[c]) if c in LIST_COLUMNS else ("" if r[c] is None else r[c]) for c in COLUMNS])
-    json_path = out_dir / "docs" / "games.json"
-    json_path.parent.mkdir(exist_ok=True)
-    public = [{"id": i, **{c: ", ".join(r[c]) if c in LIST_COLUMNS else r[c] for c in PUBLIC_COLUMNS}}
-              for i, r in enumerate(rows, 1)]
-    json_path.write_text(json.dumps({"generated": time.strftime("%Y-%m-%d"), "games": public}, separators=(",", ":")))
-    return db_path, csv_path, json_path
+    return db_path, csv_path
 
 
 def main():
@@ -373,10 +366,14 @@ def main():
             if n % 25 == 0 or n == len(groups):
                 print(f"  {n}/{len(groups)}  ({time.monotonic() - start:.0f}s elapsed)", flush=True)
 
-    paths = write_outputs(rows, args.out)
+    db_path, csv_path = write_outputs(rows, args.out)
     no_meta = sum(1 for r in rows if not r["metadata"])
     print(f"\nWrote {len(rows)} games ({dropped} non-games dropped, {no_meta} with no metadata found)")
-    print("\n".join(f"  {p}" for p in paths))
+    print(f"  {db_path}\n  {csv_path}")
+    if args.out.resolve() == Path(__file__).resolve().parent:
+        from publish import apply_visibility
+        shown, hidden = apply_visibility(db_path)
+        print(f"  docs/games.json: {shown} public, {hidden} hidden (see visibility.json)")
 
 
 if __name__ == "__main__":
