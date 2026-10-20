@@ -2,136 +2,236 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Game Library</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JamesLH Game Library</title>
+<meta name="description" content="Browse every game JamesLH owns and suggest one for stream.">
+<meta property="og:title" content="JamesLH · Game Library">
+<meta property="og:description" content="Browse every game I own and suggest what I should play next on stream.">
+<meta property="og:image" content="crest.png">
+<link rel="icon" href="crest.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap">
 <style>
+/* Palette and type from the JamesLH Stream Planner: charcoal ground, metallic gold accents. */
 :root {
-  --bg: #f4f3ef; --panel: #ffffff; --panel-2: #ecebe6; --text: #1d1c1a; --muted: #6b6963;
-  --border: #dcdad3; --accent: #3d5afe; --accent-text: #fff; --chip: #e7e6f5;
-  --good: #1b8a4a; --mid: #b07d00; --bad: #c0392b; --shadow: 0 1px 3px rgba(0,0,0,.08);
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121316; --panel: #1b1d22; --panel-2: #24272e; --text: #e8e8ea; --muted: #9a9ca5;
-    --border: #2e313a; --accent: #7b8cff; --accent-text: #0b0c10; --chip: #2a2e45;
-    --good: #4cc77f; --mid: #e0b84a; --bad: #f0715f; --shadow: none;
-  }
+  --ink: #0c0d0d; --char: #161818; --slate: #1e2121; --line: #2b2f2e; --line-soft: #222525;
+  --fg: #ece6d6; --muted: #9b968a; --faint: #6c6a63;
+  --gold-deep: #8d5d24; --gold: #c9a35a; --gold-hi: #f5eba0; --on-gold: #1b1408;
+  --good: #8fbf7f; --bad: #d88a6a;
+  --gold-grad: linear-gradient(100deg, #8d5d24 0%, #c9a35a 28%, #f5eba0 50%, #c9a35a 72%, #8d5d24 100%);
+  --f-display: "Old Standard TT", Georgia, "Times New Roman", serif;
+  --f-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --r: 14px; --bar-h: 68px;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
-button, input, select { font: inherit; color: inherit; }
-a { color: var(--accent); }
-
-header {
-  position: sticky; top: 0; z-index: 10; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+html, body { background: var(--ink); }
+body {
+  margin: 0; color: var(--fg); font: 14px/1.5 var(--f-body);
+  background: radial-gradient(1200px 500px at 85% -10%, rgba(201,163,90,.08), transparent 60%), var(--ink);
+  min-height: 100vh;
 }
-header h1 { font-size: 17px; margin: 0 8px 0 0; white-space: nowrap; }
-#q { flex: 1 1 260px; min-width: 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
-select, .btn { padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); cursor: pointer; }
-.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+button, input, select { font: inherit; color: inherit; }
+a { color: var(--gold); text-decoration-color: rgba(201,163,90,.4); text-underline-offset: 3px; }
+a:hover { color: var(--gold-hi); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+::placeholder { color: var(--faint); }
+
+.gold-text { background: var(--gold-grad); background-size: 200% 100%; background-position: 50% 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.shine { animation: shine 7s ease-in-out infinite; }
+@keyframes shine { 0%, 60% { background-position: 100% 0; } 85%, 100% { background-position: 0% 0; } }
+@media (prefers-reduced-motion: reduce) { .shine { animation: none; } .card { transition: none; } }
+.eyebrow { margin: 0; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+/* ── Top bar ── */
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(12,13,13,.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft);
+}
+.bar-in { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; padding: 10px max(16px, env(safe-area-inset-left)); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: 6px; }
+.brand img { width: 44px; height: 44px; border-radius: 50%; }
+.brand-name { font: 700 22px/1 var(--f-display); letter-spacing: .02em; }
+.brand-sub { display: block; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+#q { flex: 1 1 240px; min-width: 0; padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--char); outline: none; }
+#q:focus { border-color: var(--gold); }
+select, .btn { padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--char); cursor: pointer; }
+select:hover, .btn:hover { border-color: var(--gold); color: var(--gold-hi); }
+.btn.primary { background: var(--gold-grad); background-size: 200% 100%; color: var(--on-gold); border-color: transparent; font-weight: 700; }
+.btn.primary:hover { color: var(--on-gold); background-position: 30% 0; }
+.socials { display: flex; gap: 6px; }
+.social { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--char); display: grid; place-items: center; color: var(--muted); }
+.social:hover { border-color: var(--gold); color: var(--gold-hi); }
+.social svg { width: 18px; height: 18px; fill: currentColor; }
 #filtersToggle { display: none; }
 
-.layout { display: grid; grid-template-columns: 290px 1fr; align-items: start; }
+/* ── Layout ── */
+.layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); align-items: start; }
 aside {
-  position: sticky; top: 57px; height: calc(100vh - 57px); overflow-y: auto; padding: 12px 16px 40px;
-  border-right: 1px solid var(--border); background: var(--panel);
+  position: sticky; top: var(--bar-h); height: calc(100vh - var(--bar-h)); overflow-y: auto;
+  padding: 16px 16px 40px; border-right: 1px solid var(--line-soft); background: rgba(22,24,24,.6);
+  scrollbar-color: var(--line) transparent;
 }
-aside section { margin-bottom: 18px; }
-aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; display: flex; justify-content: space-between; }
-.check { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
-.check .n, .opt .n { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.row { display: flex; gap: 8px; align-items: center; }
-.row input[type=number] { width: 80px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
-input[type=range] { width: 100%; accent-color: var(--accent); }
-.list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
-.opt { display: flex; align-items: center; gap: 4px; padding: 3px 4px 3px 8px; }
-.opt:hover { background: var(--panel-2); }
+aside section { margin-bottom: 20px; }
+aside h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin: 0 0 8px; display: flex; justify-content: space-between; gap: 8px; }
+aside h3 span { letter-spacing: .04em; text-transform: none; color: var(--faint); font-weight: 500; }
+.check { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; }
+.check:hover { color: var(--gold-hi); }
+input[type=checkbox] {
+  appearance: none; width: 16px; height: 16px; flex: none; margin: 0; border-radius: 4px; border: 1px solid var(--faint); background: transparent; cursor: pointer; display: grid; place-items: center;
+}
+input[type=checkbox]:checked { background: var(--gold-grad); border-color: var(--gold); }
+input[type=checkbox]:checked::after { content: ""; width: 4px; height: 8px; border: solid var(--on-gold); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.check .n, .opt .n { margin-left: auto; color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.row { display: flex; gap: 8px; align-items: center; color: var(--muted); }
+.row input[type=number] { width: 84px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0,0,0,.25); outline: none; }
+.row input[type=number]:focus { border-color: var(--gold); }
+input[type=range] { width: 100%; accent-color: var(--gold); }
+.list { max-height: 250px; overflow-y: auto; border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(0,0,0,.18); scrollbar-color: var(--line) transparent; }
+.opt { display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 10px; }
+.opt:hover { background: var(--slate); }
 .opt .lbl { flex: 1; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.opt .x { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 4px; font-size: 13px; }
+.opt .x { border: 0; background: none; cursor: pointer; color: var(--faint); padding: 0 6px; font-size: 13px; }
 .opt .x:hover { color: var(--bad); }
-.opt.on .lbl { font-weight: 600; color: var(--accent); }
-.filter-search { width: 100%; padding: 6px 10px; margin-bottom: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
-.link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 11px; text-transform: none; letter-spacing: 0; }
+.opt.on .lbl { font-weight: 700; color: var(--gold-hi); }
+.filter-search { width: 100%; padding: 7px 11px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0,0,0,.25); outline: none; }
+.filter-search:focus { border-color: var(--gold); }
+.link { background: none; border: 0; color: var(--gold); cursor: pointer; padding: 0 4px; font-size: 12px; }
+.link:hover { color: var(--gold-hi); }
 
-main { padding: 12px 16px 40px; min-width: 0; }
-#active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; min-height: 28px; }
-#count { color: var(--muted); margin-right: 6px; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; background: var(--chip); font-size: 12px; border: 0; cursor: pointer; }
-.chip.ex { background: color-mix(in srgb, var(--bad) 20%, transparent); text-decoration: line-through; }
+main { padding: 18px max(16px, env(safe-area-inset-right)) 48px 20px; min-width: 0; }
+
+/* ── Hero ── */
+.hero-strip {
+  position: relative; overflow: hidden; margin-bottom: 16px;
+  display: flex; gap: 16px 32px; align-items: end; justify-content: space-between; flex-wrap: wrap;
+  padding: 22px 26px; background: linear-gradient(180deg, var(--slate), var(--char));
+  border: 1px solid var(--line-soft); border-radius: 18px;
+}
+.hero-strip::after {
+  content: ""; position: absolute; right: -120px; top: -160px; width: 420px; height: 420px; pointer-events: none;
+  background: radial-gradient(circle, rgba(214,180,105,.55) 1.1px, transparent 1.6px) 0 0 / 9px 9px;
+  -webkit-mask: radial-gradient(circle, transparent 54%, #000 58%, #000 63%, transparent 72%);
+          mask: radial-gradient(circle, transparent 54%, #000 58%, #000 63%, transparent 72%);
+  opacity: .55;
+}
+.hero-strip > * { position: relative; z-index: 1; min-width: 0; }
+.hero-strip h1 { font: 700 clamp(28px, 3.6vw, 40px)/1.05 var(--f-display); margin: 6px 0 0; }
+.hero-strip p { margin: 8px 0 0; color: var(--muted); max-width: 60ch; }
+.hero-strip p b { color: var(--fg); font-weight: 600; }
+.hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+#active { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; min-height: 28px; }
+#count { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: rgba(201,163,90,.1); border: 1px solid rgba(201,163,90,.25); color: var(--fg); font-size: 12px; cursor: pointer; }
+.chip:hover { border-color: var(--gold); color: var(--gold-hi); }
+.chip.ex { background: rgba(216,138,106,.12); border-color: rgba(216,138,106,.4); text-decoration: line-through; }
 .chip b { font-weight: 400; color: var(--muted); }
 
+/* ── Cards ── */
 #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
-.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: transform .12s; }
-.card:hover { transform: translateY(-2px); border-color: var(--accent); }
-.cover { aspect-ratio: 460 / 215; background: var(--panel-2); position: relative; overflow: hidden; }
+.card { background: var(--char); border: 1px solid var(--line-soft); border-radius: var(--r); overflow: hidden; cursor: pointer; display: flex; flex-direction: column; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.card:hover, .card:focus-visible { transform: translateY(-3px); border-color: var(--gold); box-shadow: 0 10px 30px -12px rgba(201,163,90,.35); outline: none; }
+.cover { aspect-ratio: 460 / 215; background: var(--slate); position: relative; overflow: hidden; }
 .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.cover .ph { position: absolute; inset: 0; display: grid; place-items: center; font-size: 34px; font-weight: 700; color: var(--muted); }
-.cover .badges { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; }
-.badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,.72); color: #fff; text-transform: uppercase; letter-spacing: .03em; }
-.card .body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-.card .t { font-weight: 600; line-height: 1.25; }
-.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; }
-.score { font-weight: 700; font-variant-numeric: tabular-nums; }
-.good { color: var(--good); } .mid { color: var(--mid); } .bad { color: var(--bad); }
-.tags { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cover .ph { position: absolute; inset: 0; display: grid; place-items: center; font: 700 34px var(--f-display); color: var(--gold); opacity: .6; }
+.cover .badges { position: absolute; top: 7px; right: 7px; display: flex; gap: 4px; }
+.badge { font-size: 9.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(12,13,13,.82); color: var(--fg); text-transform: uppercase; letter-spacing: .08em; border: 1px solid rgba(255,255,255,.08); }
+.badge.inst { background: var(--good); color: var(--ink); }
+.card .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.card .t { font-weight: 700; line-height: 1.25; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.score { font-weight: 700; }
+.good { color: var(--good); } .mid { color: var(--gold); } .bad { color: var(--bad); }
+.tags { color: var(--faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pdb { font-size: 11px; font-weight: 700; text-transform: capitalize; }
-.pdb.platinum { color: #8fa3b3; } .pdb.gold { color: #c9a227; } .pdb.silver { color: #a0a0a0; }
-.pdb.bronze { color: #b87333; } .pdb.borked { color: var(--bad); } .pdb.native { color: var(--good); }
+.pdb.platinum { color: #b9c8d2; } .pdb.gold { color: var(--gold-hi); } .pdb.silver { color: #a7a7a7; }
+.pdb.bronze { color: #c08a5a; } .pdb.borked { color: var(--bad); } .pdb.native { color: var(--good); } .pdb.pending { color: var(--faint); }
 #sentinel { height: 40px; }
-#empty { text-align: center; color: var(--muted); padding: 60px 0; display: none; }
+#empty { text-align: center; color: var(--muted); padding: 60px 0; display: none; font: italic 20px var(--f-display); }
 
-dialog { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); color: var(--text); }
-dialog::backdrop { background: rgba(0,0,0,.55); }
-dialog .hero { width: 100%; aspect-ratio: 460/215; object-fit: cover; display: block; background: var(--panel-2); }
-dialog .content { padding: 16px 20px 20px; }
-dialog h2 { margin: 0 0 4px; }
-dialog .close { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,.65); color: #fff; border: 0; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
-dl { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 14px 0; }
-dt { color: var(--muted); }
+/* ── Detail dialog ── */
+dialog { width: min(740px, calc(100vw - 24px)); max-height: calc(100vh - 40px); padding: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--char); color: var(--fg); box-shadow: 0 30px 80px -20px #000; }
+dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(3px); }
+dialog .hero { width: 100%; aspect-ratio: 460/215; object-fit: cover; display: block; background: var(--slate); }
+dialog .content { padding: 18px 22px 22px; }
+dialog h2 { margin: 0 0 4px; font: 700 28px/1.15 var(--f-display); }
+dialog .close { position: absolute; top: 12px; right: 12px; background: rgba(12,13,13,.8); color: var(--fg); border: 1px solid var(--line); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; font-size: 15px; }
+dialog .close:hover { border-color: var(--gold); color: var(--gold-hi); }
+dialog p { color: #d4cebf; }
+dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 14px; margin: 16px 0; }
+dt { color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; padding-top: 3px; }
 dd { margin: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.links { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; font-size: 13px; }
 
-@media (max-width: 800px) {
+.suggest { margin-top: 16px; padding: 16px; border-radius: 14px; border: 1px solid rgba(201,163,90,.35); background: linear-gradient(180deg, rgba(201,163,90,.1), rgba(201,163,90,.03)); }
+.suggest h3 { margin: 0 0 4px; font: 700 18px var(--f-display); }
+.suggest p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.suggest .msg { width: 100%; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: rgba(0,0,0,.3); color: var(--fg); font-size: 13px; margin-bottom: 10px; outline: none; }
+.suggest .row { flex-wrap: wrap; }
+.suggest .btn { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; color: var(--fg); }
+.suggest .btn svg { width: 15px; height: 15px; fill: currentColor; }
+.suggest .btn.primary { color: var(--on-gold); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 100;
+  padding: 10px 18px; border-radius: 999px; background: var(--gold-grad); color: var(--on-gold); font-weight: 700; transition: opacity .2s, transform .2s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-width: 860px) {
   #filtersToggle { display: inline-block; }
   .layout { grid-template-columns: 1fr; }
-  aside { display: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+  aside { display: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line-soft); }
   body.show-filters aside { display: block; }
-  #grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-  header h1 { display: none; }
+  #grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+  main { padding: 14px 16px 40px; }
+  .hero-strip { padding: 18px; }
+  .brand-sub, .socials { display: none; }
+  #q { order: 10; flex-basis: 100%; }
+  .card .body { padding: 8px 10px 10px; }
+  dl { grid-template-columns: 1fr; gap: 2px; }
+  dd { margin-bottom: 8px; }
 }
 </style>
 </head>
 <body>
-<header>
-  <h1>🎮 Game Library</h1>
-  <button class="btn" id="filtersToggle">Filters</button>
-  <input id="q" type="search" placeholder="Search titles, developers, tags, descriptions…" autocomplete="off">
-  <select id="sort" aria-label="Sort by">
-    <option value="title">Title</option>
-    <option value="review">Steam review %</option>
-    <option value="popularity">Popularity</option>
-    <option value="metacritic">Metacritic</option>
-    <option value="year">Release year</option>
-    <option value="playtime">Playtime</option>
-    <option value="random">Shuffle</option>
-  </select>
-  <button class="btn" id="order" title="Toggle sort direction">↑</button>
-  <button class="btn primary" id="surprise" title="Open a random game matching the current filters">🎲 Surprise me</button>
+<header id="bar">
+  <div class="bar-in">
+    <a class="brand" href="./" title="Reset filters">
+      <img src="crest.png" alt="JLH crest" width="44" height="44">
+      <div><span class="brand-name gold-text shine">JamesLH</span><span class="brand-sub">Game Library</span></div>
+    </a>
+    <button class="btn" id="filtersToggle">Filters</button>
+    <input id="q" type="search" placeholder="Search games, tags, developers…" autocomplete="off">
+    <select id="sort" aria-label="Sort by">
+      <option value="title">A–Z</option>
+      <option value="review">Steam review %</option>
+      <option value="popularity">Popularity</option>
+      <option value="metacritic">Metacritic</option>
+      <option value="year">Release year</option>
+      <option value="playtime">Playtime</option>
+      <option value="random">Shuffle</option>
+    </select>
+    <button class="btn" id="order" title="Toggle sort direction">↑</button>
+    <div class="socials">
+      <a class="social" id="twitchLink" target="_blank" rel="noopener" title="Watch on Twitch" aria-label="Twitch"><svg viewBox="0 0 24 24"><path d="M4.3 3 3 6.4v13.2h4.5V22h2.5l2.4-2.4h3.7l4.9-4.9V3H4.3Zm15 10.9-2.8 2.8H12l-2.4 2.4v-2.4H5.8V4.8h13.5v9.1ZM16.6 8v4.9h-1.8V8h1.8Zm-4.9 0v4.9H9.9V8h1.8Z"/></svg></a>
+      <a class="social" id="youtubeLink" target="_blank" rel="noopener" title="Watch on YouTube" aria-label="YouTube"><svg viewBox="0 0 24 24"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12a31 31 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1c.4-1.6.5-4.8.5-4.8s0-3.2-.5-4.8ZM9.7 15V9l5.8 3-5.8 3Z"/></svg></a>
+    </div>
+  </div>
 </header>
 
 <div class="layout">
   <aside id="filters">
     <section><h3>Store</h3><div id="f-store"></div></section>
-    <section><h3>Runs on Linux</h3><div id="f-protondb"></div></section>
+    <section><h3>Runs on Linux <span>my setup</span></h3><div id="f-protondb"></div></section>
     <section>
       <h3>Release year</h3>
       <div class="row"><input type="number" id="year_min" placeholder="from"> – <input type="number" id="year_max" placeholder="to"></div>
     </section>
     <section>
       <h3>Steam reviews <span id="min_review_val">any</span></h3>
-      <input type="range" id="min_review" min="0" max="95" step="5" value="0">
+      <input type="range" id="min_review" min="0" max="95" step="5" value="0" aria-label="Minimum Steam review percentage">
       <label class="check"><input type="checkbox" id="min_reviews"> At least 500 reviews</label>
     </section>
     <section id="sec-library">
@@ -142,24 +242,44 @@ dd { margin: 0; }
     <section><h3>Play mode</h3><div class="list" id="f-mode"></div></section>
     <section><h3>Genre</h3><div class="list" id="f-genre"></div></section>
     <section>
-      <h3>Tags <span>⊘ = exclude</span></h3>
+      <h3>Tags <span>⊘ excludes</span></h3>
       <input class="filter-search" id="tagSearch" type="search" placeholder="Find a tag…">
       <div class="list" id="f-tag" style="max-height:340px"></div>
     </section>
   </aside>
 
   <main>
+    <section class="hero-strip">
+      <div>
+        <p class="eyebrow">Viewer picks</p>
+        <h1>What should I play <span class="gold-text">next?</span></h1>
+        <p>This is <b>every game I own</b> on Steam, Epic and GOG. Search or filter, open one you'd like to see on stream,
+          and hit <b>Suggest</b> to drop it in chat.</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" id="surprise" title="Open a random game matching the current filters">🎲 Random pick</button>
+      </div>
+    </section>
     <div id="active"><span id="count"></span></div>
     <div id="grid"></div>
-    <div id="empty">No games match these filters.</div>
+    <div id="empty">Nothing matches those filters.</div>
     <div id="sentinel"></div>
   </main>
 </div>
 
 <dialog id="detail"></dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const PAGE = 60;
+// Channel links and the chat message viewers copy. Edit these to change the wording or add a bot command.
+const TWITCH = "https://www.twitch.tv/jameslighthammer";
+const TWITCH_CHAT = "https://www.twitch.tv/popout/jameslighthammer/chat?popout=";
+const YOUTUBE = "https://www.youtube.com/@jlh5633";
+const YOUTUBE_LIVE = "https://www.youtube.com/@jlh5633/live";
+const SITE = "https://jameslh9090.github.io/JLHGames/";
+const suggestionMessage = (g) => `🎮 Game suggestion: ${g.title} → ${SITE}?game=${slug(g.title)}`;
+const slug = (t) => t.normalize("NFKD").toLowerCase().replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const TIERS = ["native", "platinum", "gold", "silver", "bronze", "borked", "pending"];
 const TIER_LABEL = { native: "Native Linux", pending: "Pending (few reports)" };
 const MULTI = ["genre", "tag", "xtag", "mode", "store", "protondb"];
@@ -167,7 +287,9 @@ const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 // ---- state <-> URL ----
-const state = { q: "", sort: "title", order: "asc", year_min: "", year_max: "", min_review: "0",
+// Viewers land on the best-known games first.
+const DEFAULT_SORT = "popularity";
+const state = { q: "", sort: DEFAULT_SORT, order: "desc", year_min: "", year_max: "", min_review: "0",
   min_reviews: false, installed: false, unplayed: false, genre: [], tag: [], xtag: [], mode: [], store: [], protondb: [] };
 
 function readUrl() {
@@ -193,8 +315,8 @@ function params() {
 
 function syncUrl() {
   const p = params();
-  if (state.sort !== "title") p.set("sort", state.sort);
-  if (state.order !== "asc") p.set("order", state.order);
+  if (state.sort !== DEFAULT_SORT) p.set("sort", state.sort);
+  if (state.order !== "desc") p.set("order", state.order);
   history.replaceState(null, "", p.toString() ? "?" + p : location.pathname);
 }
 
@@ -222,7 +344,7 @@ async function initData() {
     // Install state and playtime are not published.
     $("#sec-library").remove();
     $('#sort option[value="playtime"]').remove();
-    $("header h1").title = `Updated ${LOCAL.generated}`;
+    $(".brand").title = `Library updated ${LOCAL.generated}`;
   }
 }
 
@@ -334,7 +456,7 @@ function cover(g) {
 
 function card(g) {
   const badges = g.stores.split(", ").map((s) => `<span class="badge">${esc(s)}</span>`).join("")
-    + (g.installed ? `<span class="badge" style="background:var(--good)">Installed</span>` : "");
+    + (g.installed ? `<span class="badge inst">Installed</span>` : "");
   const score = g.steam_review_pct != null
     ? `<span class="score ${scoreClass(g.steam_review_pct)}" title="${g.steam_reviews?.toLocaleString()} Steam reviews">${g.steam_review_pct}%</span>` : "";
   return `<div class="card" data-id="${g.id}" tabindex="0">
@@ -434,7 +556,7 @@ async function openDetail(id) {
   if (g.steam_appid) {
     links.push(`<a target="_blank" rel="noopener" href="https://store.steampowered.com/app/${g.steam_appid}">Steam page</a>`);
     links.push(`<a target="_blank" rel="noopener" href="https://www.protondb.com/app/${g.steam_appid}">ProtonDB</a>`);
-    if (g.stores.includes("Steam")) links.push(`<a href="steam://run/${g.steam_appid}">▶ Launch in Steam</a>`);
+    if (!LOCAL && g.stores.includes("Steam")) links.push(`<a href="steam://run/${g.steam_appid}">▶ Launch in Steam</a>`);
   }
   links.push(`<a target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(g.title + " gameplay")}">Gameplay videos</a>`);
   const row = (label, val) => val ? `<dt>${label}</dt><dd>${val}</dd>` : "";
@@ -457,10 +579,58 @@ async function openDetail(id) {
         ${row("Tags", list(g.tags).length ? chips("tag", list(g.tags)) : "")}
       </dl>
       ${!g.metadata ? `<p class="meta">No store metadata was found for this title.</p>` : ""}
+      <div class="suggest">
+        <h3>Want to see this on stream?</h3>
+        <p>Copy the message and paste it in chat. It links straight back to this game.</p>
+        <input class="msg" id="suggestMsg" value="${esc(suggestionMessage(g))}" aria-label="Suggestion message" spellcheck="false">
+        <div class="row">
+          <button class="btn primary" id="copySuggest">Copy suggestion</button>
+          <a class="btn" target="_blank" rel="noopener" href="${TWITCH_CHAT}">${ICON_TWITCH} Twitch chat</a>
+          <a class="btn" target="_blank" rel="noopener" href="${YOUTUBE_LIVE}">${ICON_YOUTUBE} YouTube live</a>
+        </div>
+      </div>
       <div class="links">${links.join("")}</div>
     </div>`;
-  $("#detail").showModal();
-  $("#detail").scrollTop = 0;
+  const d = $("#detail");
+  if (!d.open) d.showModal();
+  d.scrollTop = 0;
+  const p = new URLSearchParams(location.search);
+  p.set("game", slug(g.title));
+  history.replaceState(null, "", "?" + p);
+}
+
+const ICON_TWITCH = document.querySelector("#twitchLink svg").outerHTML;
+const ICON_YOUTUBE = document.querySelector("#youtubeLink svg").outerHTML;
+$("#twitchLink").href = TWITCH;
+$("#youtubeLink").href = YOUTUBE;
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+async function copySuggestion() {
+  const input = $("#suggestMsg");
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch {
+    input.select();  // clipboard API blocked: leave it selected for Ctrl+C
+    document.execCommand?.("copy");
+  }
+  toast("Copied! Paste it in chat ✨");
+}
+
+// ?game=<slug> opens that game directly (links shared in chat).
+const START_GAME = new URLSearchParams(location.search).get("game");  // read before refresh() rewrites the URL
+async function openFromUrl() {
+  const want = START_GAME;
+  if (!want || !LOCAL) return;
+  const g = LOCAL.games.find((x) => slug(x.title) === want);
+  if (g) openDetail(g.id);
 }
 
 // ---- events ----
@@ -530,6 +700,7 @@ $("#grid").addEventListener("keydown", (e) => {
 $("#detail").addEventListener("click", (e) => {
   const d = $("#detail");
   if (e.target === d || e.target.closest(".close")) return d.close();
+  if (e.target.closest("#copySuggest")) return copySuggestion();
   const add = e.target.closest("[data-add]");
   if (add) {
     d.close();
@@ -550,7 +721,9 @@ new IntersectionObserver((entries) => {
 }, { rootMargin: "600px" }).observe($("#sentinel"));
 
 readUrl();
-initData().then(refresh);
+$("#detail").addEventListener("close", syncUrl);  // drop ?game= when the dialog closes
+new ResizeObserver(() => document.documentElement.style.setProperty("--bar-h", $("#bar").offsetHeight + "px")).observe($("#bar"));
+initData().then(refresh).then(openFromUrl);
 </script>
 </body>
 </html>

@@ -6,6 +6,14 @@ Live site: https://jameslh9090.github.io/JLHGames/
 merged across stores, with genres, Steam user tags, play modes, release year,
 Metacritic, Steam review %, ProtonDB tier, install state and playtime.
 
+## Viewer page
+
+The site is styled to match the JamesLH stream branding (gold crest, `docs/crest.png`) and is meant
+for stream viewers: each game has a **Suggest** box that copies a chat message linking back to it
+(`?game=<slug>` opens that game), with buttons for Twitch chat and YouTube live. The channel URLs and
+message wording are constants at the top of the `<script>` in `docs/index.html`
+(`TWITCH`, `YOUTUBE`, `suggestionMessage`) — change the message there if you add a bot command like `!suggest`.
+
 ## Refresh
 
 1. In Lutris, re-sync your Steam / Epic / GOG sources (picks up new purchases).
